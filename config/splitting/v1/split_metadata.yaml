@@ -1,0 +1,15 @@
+cut_dates:
+  train_val: '2017-04-10'
+  val_test: '2020-05-11'
+statistics:
+  total_exams: 998091
+  train_ssl_count: 698630
+  val_ssl_count: 149700
+  test_future_count: 149761
+  train_percentage: 70.0
+  val_percentage: 15.0
+  test_percentage: 15.0
+generated_at: '2025-11-03 14:15:54'
+source_data_hash: fac3ad3ec9f15e257b9a16739ecace1e856da6dce4f084c1df91617bd4d079f1
+random_seed: 0
+sorted_manifests: true

@@ -1,0 +1,8 @@
+cold_start_K: 3
+sparse_max: 10
+dense_min: 30
+cold_start_pct: 0.0094
+id_col: person_id
+seed: 0
+exams_root_sha: 70d9e05b6401
+generated: '2025-11-26T14:23:44+00:00'

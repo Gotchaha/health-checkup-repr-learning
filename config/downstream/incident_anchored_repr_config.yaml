@@ -1,0 +1,85 @@
+# Incident-anchored representation extraction config
+# This config is for inference only (no training).
+
+experiment:
+  name: "incident_anchored_repr"
+  description: "Extract SSL representations for incident-anchored manifests"
+  seed: 42
+
+# Device for inference
+# Options: "cuda", "cpu", or "auto"
+device: "cuda"
+
+ssl_backbone:
+  checkpoint_path: "outputs/checkpoints/ssl_pretraining_v1_full_hpo_2025-12-08_00-07-30/checkpoint_step_150000.pt"
+  encoder_dim: 768
+
+data:
+  demographics_path: "data/processed/person.parquet"
+  use_result: true
+  use_pretokenized_result: true
+  result_tokenized_path: "cache/pretokenized/v1/result_jmedrobertabasesentencepiece_tok512_trunc_phi.parquet"
+  use_interview: false
+  interview_path: null
+
+  # Materialized mcinfo settings
+  mcinfo_rg_cache_size: 2
+  mcinfo_validate_footer: true
+
+  # DataLoader settings
+  batch_size: 32
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+  persistent_workers: true
+  shuffle: false
+
+  # Manifest meta passthrough (null = auto-select intersection with defaults)
+  manifest_extra_cols: null
+  manifest_meta_tensor_keys: null
+
+  # Episode identifier (optional but recommended)
+  episode_id:
+    enabled: true
+    template: "{cohort}|{anchor_code}|{person_id}|{index_date}"
+
+inputs:
+  - name: "anchor_000002800010_case"
+    manifest_path: "data/downstream/phenotyping/incident-anchored/case_manifest_anchor_000002800010_K2_W5_minpre4.parquet"
+    mcinfo_materialized_path: "data/downstream/phenotyping/incident-anchored/mcinfo_materialized/case_000002800010_K2_W5_minpre4.parquet"
+
+  - name: "anchor_000002800010_control"
+    manifest_path: "data/downstream/phenotyping/incident-anchored/control_manifest_anchor_000002800010_K2_W5_minpre4.parquet"
+    mcinfo_materialized_path: "data/downstream/phenotyping/incident-anchored/mcinfo_materialized/control_000002800010_K2_W5_minpre4.parquet"
+
+  - name: "anchor_000002800016_case"
+    manifest_path: "data/downstream/phenotyping/incident-anchored/case_manifest_anchor_000002800016_K2_W5_minpre4.parquet"
+    mcinfo_materialized_path: "data/downstream/phenotyping/incident-anchored/mcinfo_materialized/case_000002800016_K2_W5_minpre4.parquet"
+
+  - name: "anchor_000002800016_control"
+    manifest_path: "data/downstream/phenotyping/incident-anchored/control_manifest_anchor_000002800016_K2_W5_minpre4.parquet"
+    mcinfo_materialized_path: "data/downstream/phenotyping/incident-anchored/mcinfo_materialized/control_000002800016_K2_W5_minpre4.parquet"
+
+  - name: "anchor_000002800013_case"
+    manifest_path: "data/downstream/phenotyping/incident-anchored/case_manifest_anchor_000002800013_K2_W5_minpre4.parquet"
+    mcinfo_materialized_path: "data/downstream/phenotyping/incident-anchored/mcinfo_materialized/case_000002800013_K2_W5_minpre4.parquet"
+
+  - name: "anchor_000002800013_control"
+    manifest_path: "data/downstream/phenotyping/incident-anchored/control_manifest_anchor_000002800013_K2_W5_minpre4.parquet"
+    mcinfo_materialized_path: "data/downstream/phenotyping/incident-anchored/mcinfo_materialized/control_000002800013_K2_W5_minpre4.parquet"
+
+output:
+  output_dir: "data/downstream/phenotyping/incident-anchored/representations"
+  format: "parquet"
+  compression: "zstd"
+  overwrite: false
+  filename_template: "{name}.parquet"
+  log_dir: "outputs/downstream/phenotyping/incident-anchored"
+
+  embedding_dim: 768
+  embedding_dtype: "float32"
+  fixed_size_list: true
+
+  include_manifest_meta: true
+  include_person_id: true
+  save_both_representations: true

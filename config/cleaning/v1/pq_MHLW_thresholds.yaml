@@ -1,0 +1,164 @@
+tests:
+  - code: "000000200002"
+    name_jp: "体重"
+    unit_canonical: "kg"
+    unit_converted: false
+    impossible:
+      min: 20.0
+      max: 250
+  
+  - code: "000000200001"
+    name_jp: "身長"
+    unit_canonical: "cm"
+    unit_converted: false
+    impossible:
+      min: 100
+      max: 250
+  
+  - code: "000000200006"
+    name_jp: "BMI"
+    unit_canonical: "kg/m2"
+    unit_converted: false
+    impossible:
+      min: 10.0
+      max: 99.9
+  
+  - code: "000000800027"
+    name_jp: "GPT（ALT）"
+    unit_canonical: "IU/L"
+    unit_converted: true
+    impossible:
+      min: 0
+      max: 1000
+  
+  - code: "000000800026"
+    name_jp: "GOT（AST）"
+    unit_canonical: "IU/L"
+    unit_converted: true
+    impossible:
+      min: 0
+      max: 1000
+  
+  - code: "000000800029"
+    name_jp: "γGTP"
+    unit_canonical: "IU/L"
+    unit_converted: true
+    impossible:
+      min: 0
+      max: 1000
+  
+  - code: "000000800093"
+    name_jp: "赤血球"
+    unit_canonical: "10^6/uL"
+    unit_converted: true
+    impossible:
+      min: 0
+      max: 10.0
+  
+  - code: "000000800094"
+    name_jp: "血色素量"
+    unit_canonical: "g/dL"
+    unit_converted: false
+    impossible:
+      min: 0
+      max: 30.0
+  
+  - code: "000000800005"
+    name_jp: "HDLコレステロール"
+    unit_canonical: "mg/dL"
+    unit_converted: false
+    impossible:
+      min: 10.0
+      max: 500
+  
+  - code: "000000800155"
+    name_jp: "空腹時血糖"
+    unit_canonical: "mg/dL"
+    unit_converted: false
+    impossible:
+      min: 20.0
+      max: 600
+  
+  - code: "000000800008"
+    name_jp: "LDLコレステロール"
+    unit_canonical: "mg/dL"
+    unit_converted: false
+    impossible:
+      min: 20.0
+      max: 1000
+  
+  - code: "000000500009"
+    name_jp: "血圧その他収縮期"
+    unit_canonical: "mmHg"
+    unit_converted: false
+    impossible:
+      min: 60.0
+      max: 300
+  
+  - code: "000000500010"
+    name_jp: "血圧その他拡張期"
+    unit_canonical: "mmHg"
+    unit_converted: false
+    impossible:
+      min: 30.0
+      max: 150
+  
+  - code: "000000800424"
+    name_jp: "HbA1c（NGSP）"
+    unit_canonical: "%"
+    unit_converted: false
+    impossible:
+      min: 3.0
+      max: 20.0
+  
+  - code: "000000200009"
+    name_jp: "腹囲"
+    unit_canonical: "cm"
+    unit_converted: false
+    impossible:
+      min: 40.0
+      max: 250
+  
+  - code: "000000800095"
+    name_jp: "ヘマトクリット"
+    unit_canonical: "%"
+    unit_converted: false
+    impossible:
+      min: 0
+      max: 99.9
+  
+  - code: "000000800081"
+    name_jp: "クレアチニン"
+    unit_canonical: "mg/dL"
+    unit_converted: false
+    impossible:
+      min: 0.10
+      max: 20.0
+  
+  - code: "000000800426"
+    name_jp: "eGFR"
+    unit_canonical: "mL/min/1.73m2"
+    unit_converted: false
+    impossible:
+      min: 1.0
+      max: 500
+  
+  - code: "000000800429"
+    name_jp: "non-HDLコレステロール"
+    unit_canonical: "mg/dL"
+    unit_converted: false
+    impossible:
+      min: 20.0
+      max: 1000
+  
+  - code: "000000800146"
+    name_jp: "随時血糖"
+    unit_canonical: "mg/dL"
+    unit_converted: false
+    impossible:
+      min: 20.0
+      max: 1000
+
+metadata:
+  source: "標準的な健診・保健指導プログラム(令和６年度版)"
+  url: "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000194155_00004.html"

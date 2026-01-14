@@ -1,0 +1,42 @@
+# Profiling configuration for SSL pretraining performance analysis
+# Inherits from base configuration but optimized for profiling
+
+extends: base.yaml
+
+# Experiment metadata
+experiment_name: "ssl_profiling"
+description: "Performance profiling of SSL pretraining pipeline"
+
+# Profiling-specific settings
+profiling:
+  # What to profile
+  time: true           # Profile execution time
+  memory: true         # Profile memory usage
+  cuda: true          # Profile CUDA operations
+  breakdown: true     # Detailed component breakdown
+  
+  # Batch sizes to test
+  batch_sizes: [8, 16, 32]  # Test different batch sizes
+
+# Device configuration
+device: "cuda"  # Will fallback to CPU if CUDA not available
+
+# Random seed for reproducibility
+seed: 42
+deterministic: false  # Strict determinism slows down profiling
+
+# Data configuration
+data:
+  use_result: true
+  use_pretokenized_result: true
+  use_interview: false
+  
+  # DataLoader settings
+  num_workers: 4      # Number of data loading workers
+  pin_memory: true    # Pin memory for faster GPU transfer
+  prefetch_factor: 4  # Number of batches to prefetch
+
+# Training and Model configuration use base settings
+# Inherits from base.yaml
+
+use_wandb: false

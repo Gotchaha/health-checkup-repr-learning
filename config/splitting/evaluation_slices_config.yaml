@@ -1,0 +1,19 @@
+# config/splitting/evaluation_slices_config.yaml
+
+# Random seed for reproducibility
+random_seed: 0
+
+# Paths to required data
+paths:
+  # Input paths
+  train_ssl: "data/splits/core/train_ssl.parquet"
+  val_ssl: "data/splits/core/val_ssl.parquet"
+  test_future: "data/splits/core/test_future.parquet"
+  demographics: "data/processed/person.parquet"
+  visit_thresholds: "config/splitting/visit_thresholds.yaml"
+  
+  # Output paths
+  output_dir: "data/splits"
+  stats_dir: "outputs/split_stats"
+  metadata_output: "config/splitting/evaluation_slices_metadata.yaml"
+  validation_report: "outputs/split_validation/validation_report.json"

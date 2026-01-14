@@ -1,0 +1,401 @@
+# =========  lab_test_task_config_v1.yaml  =========
+# Complete configuration for downstream lab test prediction task
+# Updated for v1
+# --------------------------------------
+
+# Basic experiment metadata
+experiment_name: "lab_test_downstream_v1"
+description: "Downstream fine-tuning for clinical lab test prediction across 5 medical panels"
+
+# Data sources and paths
+data:
+  # Downstream-specific paths
+  label_source: "data/downstream/lab_test/v1/cleaned_labels.parquet"
+  manifest_path: "data/downstream/lab_test/v1/unified_manifest.parquet"
+  
+  # SSL base data (same as SSL training)
+  mcinfo_dir: "data/processed/v1/mcinfo/exam_level/"
+  demographics_path: "data/processed/person.parquet"
+  result_path: "data/processed/v1/result.parquet"
+  interview_path: null
+  use_result: true
+  use_interview: false
+  use_pretokenized_result: true
+  result_tokenized_path: "cache/pretokenized/v1/result_jmedrobertabasesentencepiece_tok512_trunc_phi.parquet"
+  
+  # DataLoader settings
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+
+  # Materialized mcinfo settings
+  mcinfo_materialized_path: "data/downstream/lab_test/v1/mcinfo_materialized/data.parquet"
+  mcinfo_rg_cache_size: 2
+  mcinfo_validate_footer: true
+
+# SSL backbone integration
+ssl_backbone:
+  checkpoint_path: "outputs/checkpoints/ssl_pretraining_v1_full_hpo_2025-12-08_00-07-30/checkpoint_step_150000.pt"  # Path to pretrained SSL model
+  encoder_dim: 768  # SSL encoder output dimension
+  freeze_encoder: true  # Freeze encoder weights for linear probing
+  
+# Data loading configuration (from datamodule.py)
+datamodule:
+  batch_size: 64
+  drop_last: false
+  
+  # Sampler configuration
+  sampler:
+    shuffle_train: true
+    shuffle_val: false
+    shuffle_test: false
+    complete_individuals_only: true  # Don't split individuals across batches
+  
+  # Label processing configuration
+  label_processing:
+    horizon: 1  # Predict t+1 exam (next visit)
+    # Label order for efficient indexing (extracted from your cleaned_labels.parquet)
+    label_order: [
+      # Regression tasks (continuous values)
+      "000000800008",  # LDL
+      "000000800005",  # HDL  
+      "000000800006",  # Triglycerides
+      "000000800026",  # AST
+      "000000800027",  # ALT
+      "000000800029",  # γ-GTP
+      "000000800424",  # HbA1c
+      "000000800155",  # Glucose
+      "000000200006",  # BMI
+      "000000200009",  # Waist
+      "000000500009",  # SBP
+      "000000500010",  # DBP
+      # Binary flag tasks
+      "000000800008_flag",  # LDL flag
+      "000000800005_flag",  # HDL flag
+      "000000800006_flag",  # TG flag
+      "000000800026_flag",  # AST flag
+      "000000800027_flag",  # ALT flag
+      "000000800029_flag",  # γ-GTP flag
+      "000000800424_flag",  # HbA1c flag
+      "000000800155_flag",  # Glucose flag
+      "000000200006_flag",  # BMI flag
+      "000000200009_flag",  # Waist flag
+      "000000500009_flag",  # SBP flag
+      "000000500010_flag",  # DBP flag
+      # Risk factor flags (binary only)
+      "000002800010",  # Medication flag 1
+      "000002800013",  # Medication flag 2
+      "000002800016",  # Medication flag 3
+      "000003100001"   # Smoking status
+    ]
+
+# Model architecture configuration (from heads.py)
+model:
+  # Panel configuration with head types and shared dimensions
+  panels:
+    lipid:
+      head_type: "shared"  # PanelHead with shared projection
+      shared_dim: 128
+      tasks: [
+        "000000800008",      # LDL (regression)
+        "000000800005",      # HDL (regression)
+        "000000800006",      # Triglycerides (regression)
+        "000000800008_flag", # LDL flag (binary)
+        "000000800005_flag", # HDL flag (binary)
+        "000000800006_flag"  # TG flag (binary)
+      ]
+    
+    liver:
+      head_type: "shared"
+      shared_dim: 128
+      tasks: [
+        "000000800026",      # AST (regression)
+        "000000800027",      # ALT (regression)
+        "000000800029",      # γ-GTP (regression)
+        "000000800026_flag", # AST flag (binary)
+        "000000800027_flag", # ALT flag (binary)
+        "000000800029_flag"  # γ-GTP flag (binary)
+      ]
+    
+    glycaemic:
+      head_type: "shared"
+      shared_dim: 64
+      tasks: [
+        "000000800424",      # HbA1c (regression)
+        "000000800155",      # Glucose (regression)
+        "000000800424_flag", # HbA1c flag (binary)
+        "000000800155_flag"  # Glucose flag (binary)
+      ]
+    
+    bp_obesity:
+      head_type: "shared"
+      shared_dim: 128
+      tasks: [
+        "000000200006",      # BMI (regression)
+        "000000200009",      # Waist (regression)
+        "000000500009",      # SBP (regression)
+        "000000500010",      # DBP (regression)
+        "000000200006_flag", # BMI flag (binary)
+        "000000200009_flag", # Waist flag (binary)
+        "000000500009_flag", # SBP flag (binary)
+        "000000500010_flag"  # DBP flag (binary)
+      ]
+    
+    risk_flags:
+      head_type: "linear"  # LinearHead (Option A)
+      tasks: [
+        "000002800010",  # Medication flag 1 (binary)
+        "000002800013",  # Medication flag 2 (binary)
+        "000002800016",  # Medication flag 3 (binary)
+        "000003100001"   # Smoking status (binary)
+      ]
+  
+  # Task type definitions for loss computation
+  task_types:
+    # Regression tasks (continuous lab values)
+    regression: [
+      "000000800008", "000000800005", "000000800006",  # Lipid
+      "000000800026", "000000800027", "000000800029",  # Liver
+      "000000800424", "000000800155",                  # Glycaemic
+      "000000200006", "000000200009", "000000500009", "000000500010"  # BP/Obesity
+    ]
+    # Binary tasks (flags and categorical outcomes)
+    binary: [
+      "000000800008_flag", "000000800005_flag", "000000800006_flag",      # Lipid flags
+      "000000800026_flag", "000000800027_flag", "000000800029_flag",      # Liver flags
+      "000000800424_flag", "000000800155_flag",                           # Glycaemic flags
+      "000000200006_flag", "000000200009_flag", "000000500009_flag", "000000500010_flag",  # BP/Obesity flags
+      "000002800010", "000002800013", "000002800016", "000003100001"      # Risk flags
+    ]
+
+# Training configuration
+training:
+  # Training modes and scheduling
+  num_epochs: 50
+
+  logging:
+    step_log_freq: 500
+  
+  # Optimizer settings (only for prediction heads, encoder frozen)
+  optimizer:
+    type: "adamw"
+    learning_rate: 1.0e-3
+    betas: [0.9, 0.95]  # β₂ = 0.95 as recommended
+    weight_decay: 0.01
+    eps: 1.0e-8
+  
+  # Learning rate scheduling
+  scheduler:
+    type: "cosine"
+    warmup_epochs: 2  # Linear warmup epochs before cosine decay
+    min_lr_ratio: 0.01  # 1% of base LR as minimum floor
+  
+  # Gradient clipping for stability
+  gradient_clipping:
+    enabled: true
+    max_norm: 1.0  # Clip gradient norm to prevent large noisy gradients
+  
+  # Multi-task loss configuration (uncertainty weighting)
+  loss:
+    type: "uncertainty_weighted"  # Implements σ⁻² weighting + log σ²
+    # Loss function specifics
+    regression_loss: "smooth_l1"  # SmoothL1Loss for continuous values
+    binary_loss: "bce_with_logits"  # BCEWithLogitsLoss for flags
+    # Initial log-variance (exp(0) = 1, equal weighting initially)
+    initial_log_var: 0.0
+  
+  # Mixed precision training
+  mixed_precision:
+    enabled: true
+    opt_level: "O1"
+  
+  # Checkpointing
+  checkpointing:
+    save_every_n_epochs: 5
+  
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 10
+    min_delta: 0.001
+
+# Validation and evaluation
+evaluation:
+  # Primary metrics for model selection and early stopping
+  primary_metrics:
+    - "macro_auroc"  # Average AUROC across all binary tasks
+    - "mean_mae"     # Average MAE across all regression tasks
+  
+  # All computed metrics
+  metrics:
+    binary: ["auroc", "auprc", "f1", "precision", "recall"]
+    regression: ["mae", "rmse", "r2", "pearson_r"]
+    aggregate: ["macro_auroc", "mean_mae"]
+  
+  # Validation frequency
+  val_check_interval: 1.0  # Every epoch
+  val_split_name: "val"  # Use VAL split for validation
+  test_split_name: "test"  # Use TESTF split for final testing
+  max_val_batches_per_epoch: 2000  # Limit partial validation to this many batches (null for full)
+  full_val_every_n_epochs: 5       # Run full validation every N epochs (null to disable)
+
+# Weights & Biases configuration
+wandb:
+  enabled: true  # Set to true to enable wandb logging
+  mode: "offline"
+  project: "lab-test-downstream"
+  entity: "gotchaha"
+  group: "downstream"
+  tags: ["downstream", "lab-test", "linear-probe"]
+  notes: "Downstream lab test prediction with frozen SSL backbone"
+
+# Reproducibility
+seed: 42
+deterministic: false
+
+# Debug and development options
+debug:
+  limit_train_batches: 20  # Number of train batches in debug mode
+  limit_val_batches: 10    # Number of val batches in debug mode
+  limit_test_batches: 5    # Number of test batches in debug mode
+  num_epochs: 3            # Override training epochs in debug mode
+
+# Task metadata (records all label preparation and cleaning settings)
+task_metadata:
+  # Lipid panel
+  "000000800008":  # LDL
+    type: "regression_and_binary"
+    transform: "none"
+    clip: {lower_pctl: 0.5, upper_pctl: 99.5}
+    threshold: 140
+    threshold_direction: "upper"
+  "000000800008_flag":
+    type: "binary"
+    pos_weight: null  # Will be computed if needed
+    
+  "000000800005":  # HDL
+    type: "regression_and_binary" 
+    transform: "none"
+    clip: {lower_pctl: 0.5, upper_pctl: 99.5}
+    threshold: 40
+    threshold_direction: "lower"
+  "000000800005_flag":
+    type: "binary"
+    pos_weight: 14.099
+    
+  "000000800006":  # Triglycerides
+    type: "regression_and_binary"
+    transform: "log1p"
+    clip: {upper_pctl: 99.5}
+    threshold: 150
+    threshold_direction: "upper"
+  "000000800006_flag":
+    type: "binary"
+    pos_weight: null  # Will be computed if needed
+
+  # Liver panel  
+  "000000800026":  # AST
+    type: "regression_and_binary"
+    transform: "log1p"
+    clip: {upper_pctl: 99.5}
+    threshold: 40
+    threshold_direction: "upper"
+  "000000800026_flag":
+    type: "binary"
+    pos_weight: 15.865
+    
+  "000000800027":  # ALT
+    type: "regression_and_binary"
+    transform: "log1p"
+    clip: {upper_pctl: 99.5}
+    threshold: 40
+    threshold_direction: "upper"
+  "000000800027_flag":
+    type: "binary"
+    pos_weight: 5.054
+    
+  "000000800029":  # γ-GTP
+    type: "regression_and_binary"
+    transform: "log1p"
+    clip: {upper_pctl: 99.5}
+    threshold: 50
+    threshold_direction: "upper"
+  "000000800029_flag":
+    type: "binary"
+    pos_weight: null  # Will be computed if needed
+
+  # Glycaemic panel
+  "000000800424":  # HbA1c
+    type: "regression_and_binary"
+    transform: "none"
+    clip: {lower_pctl: 0.5, upper_pctl: 99.5}
+    threshold: 6.5
+    threshold_direction: "upper"
+  "000000800424_flag":
+    type: "binary"
+    pos_weight: 23.224
+    
+  "000000800155":  # Glucose
+    type: "regression_and_binary"
+    transform: "none"
+    clip: {lower_pctl: 0.5, upper_pctl: 99.5}
+    threshold: 126
+    threshold_direction: "upper"
+  "000000800155_flag":
+    type: "binary"
+    pos_weight: 31.469
+
+  # BP & Obesity panel
+  "000000200006":  # BMI
+    type: "regression_and_binary"
+    transform: "none"
+    clip: {lower_pctl: 0.5, upper_pctl: 99.5}
+    threshold: 25
+    threshold_direction: "upper"
+  "000000200006_flag":
+    type: "binary"
+    pos_weight: null  # Will be computed if needed
+    
+  "000000200009":  # Waist
+    type: "regression_and_binary"
+    transform: "none"
+    clip: {lower_pctl: 0.5, upper_pctl: 99.5}
+    threshold: 85
+    threshold_direction: "upper"
+  "000000200009_flag":
+    type: "binary"
+    pos_weight: null  # Will be computed if needed
+    
+  "000000500009":  # SBP
+    type: "regression_and_binary"
+    transform: "none"
+    clip: {lower_pctl: 0.5, upper_pctl: 99.5}
+    threshold: 140
+    threshold_direction: "upper"
+  "000000500009_flag":
+    type: "binary"
+    pos_weight: 7.881
+    
+  "000000500010":  # DBP
+    type: "regression_and_binary"
+    transform: "none"
+    clip: {lower_pctl: 0.5, upper_pctl: 99.5}
+    threshold: 90
+    threshold_direction: "upper"
+  "000000500010_flag":
+    type: "binary"
+    pos_weight: 10.025
+
+  # Risk flags (binary only)
+  "000002800010":  # Medication flag 1
+    type: "binary"
+    pos_weight: 9.29
+  "000002800013":  # Medication flag 2  
+    type: "binary"
+    pos_weight: 31.56
+  "000002800016":  # Medication flag 3
+    type: "binary"
+    pos_weight: 15.12
+  "000003100001":  # Smoking status
+    type: "binary"
+    pos_weight: 3.01

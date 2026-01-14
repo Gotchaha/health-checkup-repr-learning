@@ -1,0 +1,32 @@
+cold_start:
+  eligible_persons: 7981
+  k_value: 3
+  test_count: 9562
+  train_count: 23943
+demographic:
+  age_buckets:
+  - <40
+  - 40-60
+  - '>60'
+  enhanced_count: 149761
+  sex_categories:
+  - F
+  - M
+density:
+  dense_count: 17571
+  dense_min: 30
+  dense_persons: 5420
+  sparse_count: 32415
+  sparse_max: 10
+  sparse_persons: 11650
+generation_timestamp: '2025-11-27T01:00:15.681140'
+iid:
+  random_seed: 0
+  test_count: 140189
+  test_ratio: 0.2
+  train_count: 558441
+random_seed: 0
+source_data:
+  test_future_count: 149761
+  train_ssl_count: 698630
+  val_ssl_count: 149700

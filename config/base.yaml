@@ -1,0 +1,262 @@
+# Base configuration for SSL pretraining on medical examination data
+# This serves as the default configuration that can be extended by specific experiments
+
+# Base configuration for SSL pretraining v1 (presence-aware fusion + missing-text handling)
+# Derived from ssl_pretraining_base with v1-specific knobs exposed for experimentation
+
+# Experiment metadata
+experiment_name: "ssl_pretraining_v1_base"
+description: "Self-supervised pretraining (v1) with presence-aware missing-text handling and sample-wise fusion"
+
+# Random seed for reproducibility
+seed: 42
+deterministic: false  # Set to true for strict determinism (slower)
+
+# Device configuration
+device: "cuda"  # Will fallback to CPU if CUDA not available
+
+# Model configuration
+model:
+  # Core model dimensions
+  d_model: 768
+  
+  # Embedder configurations
+  embedders:
+    text:
+      pretrained_model_name: "alabnii/jmedroberta-base-sentencepiece"
+      max_length: 512
+      padding: "longest"
+      truncation: true
+      add_phi_tokens: true
+      phi_patterns_path: "config/cleaning/v1/deidentification/phi_patterns.yaml"
+      output_dir: "outputs/embedders/text_embedder"
+      trainable: true
+    
+    categorical:
+      vocab_path: "config/embedders/cat_vocab.yaml"
+      embedding_dim: 768
+      trainable: true
+      padding_idx: 0
+      use_xavier_init: true
+      output_dir: "outputs/embedders/categorical_embedder"
+    
+    numerical:
+      d_embedding: 768
+      n_bands: 32
+      sigma: 1.0
+      bias: false
+      seed: 42
+      output_dir: "outputs/embedders/numerical_embedder"
+      trainable: true
+  
+  # Architecture configuration
+  n_cross_layers: 2          # Number of BiCrossAttLayer layers
+  n_uni_layers: 10           # Number of UniTransformerLayer layers
+  n_ind_layers: 2           # Number of layers in IndCausalTransformer
+  
+  # Cross-attention configuration
+  cross_n_heads: 8
+  cross_mlp_ratio: 2.0
+  learnable_fusion: true
+  asymmetric_fusion: false
+  fusion_d_gate: 64            # Hidden size for per-sample fusion gate MLPs (BiCrossAttLayer)
+  fusion_tau: 1.0              # Softmax temperature for sample-wise fusion weights
+  presence_logit_mask: true    # Mask cross logits when a modality is missing (prevents cross bleed-through)
+  
+  # Text compression
+  text_compress_tokens: 50
+  compress_n_heads: 8
+  compress_dropout: 0.1
+  
+  # Importance-weighted concatenation
+  initial_tab_weight: 2.0
+  initial_text_weight: 1.0
+  
+  # Unified transformer configuration
+  uni_n_heads: 8
+  uni_mlp_ratio: 4.0
+  uni_dropout: 0.1
+  
+  # Individual causal transformer
+  ind_n_heads: 4
+  ind_mlp_ratio: 2.0
+  ind_dropout: 0.1
+  
+  # Time-aware positional embedding
+  time_scale: 365.0  # Days in a year
+  time_pos_dropout: 0.1
+  
+  # Training head configuration
+  head_dropout: 0.1
+  cpc_proj_dim: 128
+  cpc_temperature: 0.1
+  cpc_min_negatives: 1
+  cvr_temperature: 0.1
+  cvr_normalize: true
+  mcc_temperature: 1.0
+  mcc_normalize: true
+  
+  # Dropout rates
+  attn_dropout: 0.1
+  mlp_dropout: 0.1
+  proj_dropout: 0.1
+  pos_dropout: 0.1
+  
+  # Other model settings
+  max_result_len: 1024
+  tiny_text_config:
+    d_model: 768
+    nhead: 4
+    d_ff: 1536
+    n_layers: 2
+    D_out: 768
+    dropout: 0.1
+
+# Training configuration (step-based)
+training:
+  # Basic training parameters
+  max_steps: 200000
+  validation_freq: 6000              # Quick validation frequency
+  full_validation_freq: 99999        # Full validation frequency  
+  val_subset_batches: 400            # Subset size for quick validation (~10% of 4679)
+  batch_size: 32
+  learning_rate: 1.0e-4
+  embedder_lr: 1.0e-5      # Lower LR for pretrained embedders
+  loss_weight_lr: 1.0e-3   # Higher LR for loss weights
+  weight_decay: 0.01
+  betas: [0.9, 0.999]
+  gradient_clip: 1.0
+
+  logging:
+    console_freq: 1         # Print to console every step
+    precision_freq: 500     # Show precision metrics every 500 steps
+  
+  # Masking probabilities
+  p_mlm: 0.15  # Masked language modeling
+  p_mcm: 0.15  # Masked category modeling
+  p_cvr: 0.20  # Cell value retrieval
+  p_mcc: 0.20  # Multiple-choice cloze
+
+  # MCC-specific parameters
+  mcc:
+    enabled: true
+    K: 5                               # 1 truth + 4 negatives
+    noise:
+      gaussian_scales: [0.05, 0.20]   # small, medium σ (first 2 probs)
+      mix_probs: [0.5, 0.35, 0.15]    # small/medium/large
+      large_min_norm_dist: 0.3        # for uniform large noise (last prob)
+  
+  # Loss weights (learnable, these are initial values)
+  initial_loss_weights:
+    mlm: 1.0
+    mcm: 1.0
+    cvr: 1.0
+    mcc: 1.0
+    cpc: 0.5
+  
+  # Held-out codes configuration
+  use_held_out_codes: true
+  held_out_codes_path: "config/splitting/v1/held_out_codes.yaml"
+  
+  # Mixed precision training
+  use_amp: true
+  
+  # Learning rate scheduler
+  scheduler:
+    type: "cosine"
+    warmup_steps: 8000
+    min_lr_ratio: 0.01  # 1% of base_lr as minimum floor 
+    step_on: "step"
+  
+  # Early stopping
+  early_stopping:
+    enabled: true
+    monitor: "val_raw_total_loss"
+    min_delta: 0.001
+    patience: 30000
+    mode: "min"
+  
+  # Checkpointing
+  checkpoint:
+    monitor: "val_raw_total_loss"
+    mode: "min"
+    save_best_only: false
+    save_freq: 6000  # Save every N steps
+  
+  # Gradient monitoring
+  monitor_gradients: true
+  raise_on_nan: true
+
+# Data configuration
+data:
+  # Manifest paths
+  manifest_path_train: "data/splits/v1/core/sorted/train_ssl.parquet"
+  manifest_path_val: "data/splits/v1/core/sorted/val_ssl.parquet"
+
+  # Data paths
+  mcinfo_dir: "data/processed/v1/mcinfo/exam_level/"
+  demographics_path: "data/processed/person.parquet"
+  result_path: "data/processed/v1/result.parquet"
+  interview_path: null
+  
+  # Modality usage
+  use_result: true
+  use_interview: false
+
+  # Pretokenized result usage
+  use_pretokenized_result: true
+  result_tokenized_path: "cache/pretokenized/v1/result_jmedrobertabasesentencepiece_tok512_trunc_phi.parquet"
+  
+  # DataLoader settings
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+
+  # Materialized mcinfo settings
+  mcinfo_materialized_path_train: "data/processed/v1/mcinfo_materialized/train.parquet"
+  mcinfo_materialized_path_val: "data/processed/v1/mcinfo_materialized/val.parquet"
+  mcinfo_rg_cache_size: 2
+  mcinfo_validate_footer: true
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  save_attention_patterns: true
+  attention_save_freq: 2000  # Save attention patterns every N steps
+  visualization_freq: 10000 # Create visualizations every N steps
+  grad_stats_freq: 1000  # Compute and log gradient statistics every N steps
+
+  # Uncertainty summary monitoring
+  uncertainty_summary:
+    enabled: true
+    early_steps: 100          # Monitor frequently for first N steps
+    early_frequency: 10       # Every N steps during early phase
+    late_frequency: 200       # Every N steps after early phase
+    log_to_console: true      # Whether to log summaries to console
+
+# Weights & Biases configuration (optional)
+use_wandb: true
+wandb:
+  project: "medical-ssl-research"
+  entity: "gotchaha"
+  group: "ssl_pretraining"
+  tags: ["ssl", "medical", "multi-modal"]
+  mode: "offline"             # "online" | "offline" | "disabled"
+  log:
+    metrics: true            # Enable scalar metric logging
+    artifacts: false         # Upload checkpoints/configs as artifacts
+    test_details: false      # Upload detailed evaluation tables
+    watch_model: false       # Hook model parameters/gradients via wandb.watch
+  log_freq: 200
+  save_code: true
+  notes: ""
+  watch:
+    log: "gradients"         # "gradients" | "parameters" | "all"
+    log_freq: 1000           # Histogram logging frequency (steps)
+    log_graph: true          # Whether to log the computation graph
+
+# Experiment notes
+notes: |
+  Base configuration for self-supervised pretraining on medical examination data.
+  Uses five complementary objectives: MLM, MCM, CVR, MCC, and CPC.
+  Architecture includes cross-modal attention and individual-level modeling.

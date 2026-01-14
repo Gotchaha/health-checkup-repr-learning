@@ -1,0 +1,20 @@
+# config/embedders/numerical_embedder.yaml
+
+# Model settings
+n_features: 34                # Number of numerical features in your data
+d_embedding: 768              # Embedding dimension (match text embedder for fusion)
+n_frequencies: 192            # Number of frequency components (creates 2*n_frequencies intermediate features)
+frequency_init_scale: 0.01    # Scale for frequency initialization (important hyperparameter)
+activation: true              # Whether to apply ReLU activation to the output embeddings
+
+# Input processing
+normalize_inputs: false       # Whether to apply LayerNorm to inputs before embedding
+
+# Training settings
+trainable: true               # Whether embedding weights should be trainable
+
+# Output settings
+output_dir: "outputs/embedders/numerical_embedder_v1"  # Where to save model & metadata
+
+# Hardware settings
+device: "cpu"                 # Use "cpu" for CPU-only, "cuda:0" for first GPU, etc.

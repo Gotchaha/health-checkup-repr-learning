@@ -1,0 +1,92 @@
+# Result text cleaning config (v1)
+version: 1
+created: "2025-09-26"
+source: "notebooks/preprocess_v1_result.ipynb"
+apply_to_columns: ["ResultText"]
+
+# Processing order the cleaner should follow
+order:
+  - nfkc                # Unicode NFKC normalization
+  - remove_invisible    # strip zero-width & BOM-like chars
+  - normalize_newlines  # unify CRLF/CR to LF
+  - squeeze_whitespace  # collapse excessive blank lines/spaces
+  - ellipsis_unify      # unify ellipsis BEFORE generic run-compression
+  - compress_runs       # compress repeated same-char runs to length 1
+  - canonical_map       # map equivalent variants to canonical symbols
+  - pattern_rules
+  - strip_trailing      # strip disallowed trailing symbols at line end
+  - strip_whitespace    # final trim of surrounding whitespace
+
+# --- generic cleaning ---
+
+remove_invisible:
+  # remove zero-width and BOM-like characters
+  pattern: "[\u200B-\u200D\uFEFF]"
+  replace: ""
+
+normalize_newlines:
+  # normalize CRLF/CR to LF
+  patterns:
+    - pattern: "\\r\\n"
+      replace: "\\n"
+    - pattern: "\\r"
+      replace: "\\n"
+
+squeeze_whitespace:
+  # collapse 3+ blank lines to 2, and 2+ spaces to 1 (after NFKC)
+  patterns:
+    - pattern: "\\n{3,}"
+      replace: "\\n\\n"
+    - pattern: " {2,}"
+      replace: " "
+    - pattern: "[\u3000]{2,}"
+      replace: "\u3000"
+
+# --- punctuation/symbol normalization ---
+
+# sentence-ending symbols allowed to remain at the end
+allowed_terminal: ["。","！","？","…","."]
+
+# symbols to strip from the end (after rstrip of whitespace)
+disallowed_trailing: ["、", ",", "・", "･", "*", "＊", "|", "/"]
+
+# characters whose repeated runs are compressible to a single char
+compressible_chars: ["、","。",",","・","*","|","/"]
+
+# canonical mapping for high-certainty, same-meaning families
+canonical_map:
+  bullet:
+    from: ["*"]
+    to: "・"
+  arrow:
+    from: ["->", "-->", "⇒", "→"]
+    to: "→"
+  tilde:
+    from: ["〜"]
+    to: "~" 
+
+# pattern-level rewrites (applied after NFKC, before generic run compression)
+pattern_rules:
+  ellipsis:
+    # any run of 3+ dots/full-stops/ellipsis OR 3+ middle dots -> single "…"
+    patterns: ["[.。…]{3,}", "[・]{3,}"]
+    replace: "…"
+  slash_runs:
+    pattern: "/{2,}"
+    replace: "/"
+  pipe_runs:
+    pattern: "\\|{2,}"
+    replace: "|"
+
+# regex snippets to protect numeric semantics from accidental edits
+protect_patterns:
+  - "(?<=\\d)\\.(?=\\d)"        # decimal point: 3.14
+  - "(?<=\\d)/(?!\\s)(?=\\d)"   # ratios/blood pressure: 130/85
+
+# if true, rstrip whitespace, then iteratively strip disallowed_trailing
+# until the line ends with an allowed_terminal or a non-listed char
+trailing_strip: true
+
+notes: >
+  Unified config derived from full-corpus inventory and multi-sequence EDA on raw result_per_exam.parquet (post-NFKC).
+  Bracket/quotation/dash families are observed but intentionally untouched in v1; only run-compression/terminal stripping and ellipsis unification are applied.

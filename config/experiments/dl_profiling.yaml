@@ -1,0 +1,36 @@
+# Dataloading profiling configuration for SSL pretraining
+# Step-based quick test for technical validation
+
+extends: base.yaml
+
+# Override experiment metadata
+experiment_name: "dl_profiling"
+description: "Profiling of dataloading - technical validation only"
+
+# Random seed for reproducibility
+seed: 42
+deterministic: false  # Set to true for strict determinism (slower)
+
+# Device configuration
+device: "cuda"  # Will fallback to CPU if CUDA not available
+
+# Training configuration adjustments for testing
+training:
+  batch_size: 32
+
+# Data configuration - keep modalities simple for testing
+data:
+  use_result: true
+  use_interview: false
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+
+  use_pretokenized_result: true
+  result_tokenized_path: "cache/pretokenized/result_jmedrobertabasesentencepiece_tok512_trunc_phi.parquet"
+
+  mcinfo_materialized_path_train: "data/processed/mcinfo_materialized/train.parquet"
+  
+
+# Keep wandb disabled for testing
+use_wandb: false

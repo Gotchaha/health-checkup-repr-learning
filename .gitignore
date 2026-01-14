@@ -1,0 +1,58 @@
+# —— Python bytecode and caches —— 
+__pycache__/
+*.py[cod]
+*$py.class
+
+# —— Jupyter Notebook ——
+notebooks/
+*.ipynb
+.ipynb_checkpoints/
+
+# —— Logs, outputs & intermediate results —— 
+logs/
+outputs/
+profile_results/
+train_results/
+pre_profile_results/
+profiling_results/
+*.log
+
+# —— Temporary directories —— 
+tmp/
+.pytest_cache/
+
+# —— Cache & model weights —— 
+cache/
+*.pt
+*.pth
+*.ckpt
+
+# —— Editor & IDE configurations —— 
+.vscode/
+.idea/
+
+# —— Swap / temporary files —— 
+*.swp
+*~
+.DS_Store
+
+# —— Conda / virtual environment directories —— 
+.env
+.venv
+env/
+venv/
+
+# —— Data directory (completely ignored) —— 
+data/
+
+# —— Intermediate data formats —— 
+*.parquet
+
+# -- Weights & Biases logs --
+wandb/
+
+# -- Project-local artifacts --
+/tree.txt
+/conda_list.txt
+/meta.txt
+/downstream_meta.txt

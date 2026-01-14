@@ -1,0 +1,118 @@
+# =========  grade5_task_config_v1.yaml  =========
+# Downstream configuration for Grade5 classification (v1 backbone)
+
+experiment_name: "grade5_downstream_v1"
+description: "Downstream Grade5 classification with frozen SSL backbone (v1)"
+
+data:
+  manifest_path: "data/downstream/grade/manifest_gradebucket_grade5_personsplit.parquet"
+  class_weight_path: "data/downstream/grade/class_weight_grade5_seed0_trainonly_mean1.json"
+  repr_path: "data/downstream/grade/repr/grade5_downstream_v1_2026-01-02_02-04-36/representations.parquet"
+  repr_dtype: "float16"
+
+  mcinfo_dir: "data/processed/v1/mcinfo/exam_level/"
+  demographics_path: "data/processed/person.parquet"
+  result_path: "data/processed/v1/result.parquet"
+  interview_path: null
+  use_result: true
+  use_interview: false
+  use_pretokenized_result: true
+  result_tokenized_path: "cache/pretokenized/v1/result_jmedrobertabasesentencepiece_tok512_trunc_phi.parquet"
+
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+
+  mcinfo_materialized_path: "data/downstream/grade/mcinfo_materialized/gradebucket_grade5_personsplit.parquet"
+  mcinfo_rg_cache_size: 2
+  mcinfo_validate_footer: true
+
+ssl_backbone:
+  checkpoint_path: "outputs/checkpoints/ssl_pretraining_v1_full_hpo_2025-12-08_00-07-30/checkpoint_step_150000.pt"
+  encoder_dim: 768
+  freeze_encoder: true
+
+datamodule:
+  batch_size: 64
+  drop_last: false
+
+  sampler:
+    shuffle_train: true
+    shuffle_val: false
+    shuffle_test: false
+    complete_individuals_only: true
+
+  label_processing:
+    label_order: ["Normal", "Mild", "Watch", "Treat", "UnderTreatment"]
+    num_classes: 5
+    ignore_index: -100
+
+training:
+  num_epochs: 30
+
+  logging:
+    step_log_freq: 1000
+
+  optimizer:
+    type: "adamw"
+    learning_rate: 1.0e-3
+    betas: [0.9, 0.95]
+    weight_decay: 0.01
+    eps: 1.0e-8
+
+  scheduler:
+    type: "cosine"
+    warmup_epochs: 0
+    min_lr_ratio: 0.01
+
+  gradient_clipping:
+    enabled: true
+    max_norm: 1.0
+
+  mixed_precision:
+    enabled: true
+
+  checkpointing:
+    save_every_n_epochs: 5
+
+  early_stopping:
+    enabled: true
+    patience: 5
+    min_delta: 0.001
+
+  # Disable SSL masking and held-out code filtering for downstream inputs
+  p_mlm: 0.0
+  p_mcm: 0.0
+  p_cvr: 0.0
+  p_mcc: 0.0
+  mcc:
+    enabled: false
+  use_held_out_codes: false
+
+evaluation:
+  primary_metrics:
+    - "per_exam_macro_f1"
+    - "per_patient_macro_f1_observed"
+
+  metrics:
+    multiclass: ["macro_f1", "accuracy", "macro_recall"]
+    aggregate: ["per_patient_macro_f1", "per_exam_macro_f1"]
+
+  val_check_interval: 1.0
+
+wandb:
+  enabled: true
+  mode: "offline"
+  project: "grade5-downstream"
+  entity: "gotchaha"
+  group: "downstream"
+  tags: ["downstream", "grade5", "linear-probe"]
+
+seed: 42
+deterministic: false
+
+debug:
+  limit_train_batches: 20
+  limit_val_batches: 10
+  limit_test_batches: 5
+  num_epochs: 3

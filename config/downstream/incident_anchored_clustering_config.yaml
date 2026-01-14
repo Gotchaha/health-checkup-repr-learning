@@ -1,0 +1,82 @@
+# Incident-anchored clustering config (per-anchor, CASE+CONTROL merged)
+# Uses SSL representations for unsupervised phenotyping.
+
+experiment:
+  name: "incident_anchored_clustering"
+  description: "Per-anchor clustering on incident-anchored SSL representations"
+  seed: 42
+
+data:
+  anchors:
+    - name: "bp_med"
+      anchor_code: "000002800010"
+      case_repr_path: "data/downstream/phenotyping/incident-anchored/representations/anchor_000002800010_case.parquet"
+      control_repr_path: "data/downstream/phenotyping/incident-anchored/representations/anchor_000002800010_control.parquet"
+
+    - name: "lipid_med"
+      anchor_code: "000002800016"
+      case_repr_path: "data/downstream/phenotyping/incident-anchored/representations/anchor_000002800016_case.parquet"
+      control_repr_path: "data/downstream/phenotyping/incident-anchored/representations/anchor_000002800016_control.parquet"
+
+    - name: "glycemic_med"
+      anchor_code: "000002800013"
+      case_repr_path: "data/downstream/phenotyping/incident-anchored/representations/anchor_000002800013_case.parquet"
+      control_repr_path: "data/downstream/phenotyping/incident-anchored/representations/anchor_000002800013_control.parquet"
+
+  id_col: "episode_id"
+  meta_cols:
+    - "episode_id"
+    - "person_id"
+    - "cohort"
+    - "anchor_code"
+    - "anchor_name"
+    - "index_date"
+    - "window_start"
+    - "age_at_index"
+    - "Gender"
+    - "case_person_id"
+    - "match_key"
+
+  embedding_cols:
+    - "general_representation"
+    - "next_prediction"
+
+preprocess:
+  standardize: true
+  residualize:
+    enabled: true
+    covariates: ["age_at_index", "Gender"]
+    model: "ridge"
+    alpha: 1.0
+    center_age: true
+    drop_missing: true
+  pca:
+    enabled: true
+    n_components: 100
+    whiten: false
+    fit_scope: "per_anchor"
+
+clustering:
+  method: "kmeans"
+  k_values: [5, 10, 15, 20]
+  n_init: 20
+  max_iter: 300
+
+output:
+  output_dir_raw: "outputs/downstream/phenotyping/incident-anchored/clustering/raw"
+  output_dir_resid: "outputs/downstream/phenotyping/incident-anchored/clustering/resid"
+  format: "parquet"
+  compression: "zstd"
+  overwrite: false
+  log_dir: "outputs/downstream/phenotyping/incident-anchored"
+
+  assignments_filename_template: "{anchor_code}__{embedding_col}__k{k}.parquet"
+  summary_filename_template: "{anchor_code}__summary.json"
+  pca2_filename_template: "{anchor_code}__{embedding_col}__pca2.parquet"
+
+  export_pca2: true
+
+sanity_checks:
+  require_unique_id: true
+  require_single_anchor_code: true
+  report_case_rate: true

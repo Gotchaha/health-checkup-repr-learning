@@ -1,0 +1,80 @@
+# config/cleaning/normalizer.yaml
+# Configuration for text normalization process
+
+# General settings
+general:
+  # Whether to log detailed statistics
+  verbose_logging: true
+  # We no longer enforce minimum content length (removed this restriction)
+  min_content_length: 0
+
+# Unicode normalization settings
+unicode:
+  # Normalization form (NFKC recommended for text cleaning)
+  form: "NFKC"
+  # Whether to strip whitespace before/after normalization
+  strip_before: false
+  strip_after: true
+
+# Whitespace normalization settings
+whitespace:
+  # Replace CR/LF with standard newlines
+  normalize_newlines: true
+  # Maximum number of consecutive newlines to allow
+  max_consecutive_newlines: 2
+  # Whether to squeeze multiple spaces
+  squeeze_spaces: true
+  # Whether to trim leading/trailing whitespace
+  trim: true
+
+# Punctuation normalization settings
+punctuation:
+  # Whether to normalize full-width to half-width punctuation
+  normalize_fullwidth: true
+  # Whether to deduplicate repeated punctuation
+  deduplicate: true
+  # Whether to standardize ellipses
+  standardize_ellipses: true
+  # Maximum number of consecutive punctuation marks (except periods)
+  max_consecutive: 1
+  # Mapping of characters to normalize (beyond what NFKC handles)
+  mapping:
+    "．．．": "..."
+    "…": "..."
+
+# Character cleaning settings
+characters:
+  # Whether to remove control characters
+  remove_control: true
+  # Whether to remove zero-width characters
+  remove_zero_width: true
+  # Regex patterns for characters to remove
+  remove_patterns:
+    - "[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]"  # Control characters
+    - "[\\u200B-\\u200D\\uFEFF]"                 # Zero-width characters
+
+# Field ordering settings
+field_ordering:
+  # Whether to enforce field order in structured data
+  enforce_order: true
+  # Order of fields in interview structure
+  interview_field_order:
+    - "question"
+    - "answer"
+
+# File-specific settings
+files:
+  interview:
+    # Fields to normalize in interview file
+    normalize_fields:
+      - "question"
+      - "answer"
+    # Whether to drop entries where both fields are empty after normalization
+    drop_empty_entries: true
+    
+  result:
+    # Fields to normalize in result file (removed GradeDescription)
+    normalize_fields:
+      - "ResultText"
+    # Whether to save original values as *_orig columns (useful for auditing)
+    save_originals: false

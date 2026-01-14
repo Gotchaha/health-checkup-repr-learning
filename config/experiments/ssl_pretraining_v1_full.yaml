@@ -1,0 +1,30 @@
+extends: base.yaml
+
+experiment_name: "ssl_pretraining_v1_full"
+description: "Full-scale SSL pretraining (v1) with presence-aware fusion; step-based training with early stopping."
+
+training:
+  max_steps: 100000
+
+  validation_freq: 5000
+  full_validation_freq: 20000
+
+  early_stopping:
+    enabled: true
+    monitor: "val_raw_total_loss"
+    min_delta: 0.01
+    patience: 40000
+    mode: "min"
+
+  checkpoint:
+    monitor: "val_raw_total_loss"
+    mode: "min"
+    save_best_only: false
+    save_freq: 10000
+
+monitoring:
+  enabled: true
+  save_attention_patterns: true
+  attention_save_freq: 10000
+  visualization_freq: 10000
+  grad_stats_freq: 1000

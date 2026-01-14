@@ -1,0 +1,40 @@
+# HPO-friendly configuration for SSL pretraining v1
+# Derived from ssl_pretraining_v1_base with lighter logging/IO and shorter schedule.
+
+extends: base.yaml
+
+experiment_name: "ssl_pretraining_v1_hpo_base"
+description: "HPO run: shorter schedule, quick-only validation, checkpoint/monitoring disabled."
+
+paths:
+  outputs_root: "outputs/hpo"
+  checkpoints_subdir: "checkpoints"
+  logs_subdir: "logs"
+
+training:
+  max_steps: 15000
+  validation_freq: 3000
+  full_validation_freq: null          # Disable full validation during HPO
+  val_subset_batches: 200
+
+  logging:
+    console_freq: 20
+    precision_freq: 500
+
+  early_stopping:
+    enabled: true
+    monitor: "val_raw_total_loss"
+    min_delta: 0.01
+    patience: 9000
+    mode: "min"
+
+  checkpoint:
+    enabled: false
+
+monitoring:
+  enabled: false
+
+use_wandb: false
+
+experiment_logging:
+  enabled: true

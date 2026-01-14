@@ -1,0 +1,113 @@
+# ============================================================
+# Data Loading Profiling Configuration
+# Academic research-focused configuration for profiling SSL data pipeline
+# ============================================================
+
+# ---------- Data paths (aligned with SSL training) ----------
+data:
+  manifest_path: "data/splits/core/sorted/train_ssl.parquet"
+  mcinfo_dir: "data/processed/mcinfo/exam_level/"
+  demographics_path: "data/processed/person.parquet"
+  result_path: "data/processed/result.parquet"
+  interview_path: "data/processed/interview.parquet"
+  result_tokenized_path: "cache/pretokenized/result_jmedrobertabasesentencepiece_tok512_trunc_phi.parquet"
+
+  # Data loading toggles
+  use_result: true
+  use_interview: false
+  use_pretokenized_result: true   # set true if using pre-tokenized result parquet
+
+# ---------- Profiling sweep & instrumentation ----------
+profiling:
+  # Sweep space
+  batch_sizes: [16, 32]
+  num_workers_list: [0, 2, 4]
+
+  prefetch_factor: 2
+
+  # Iterations
+  num_iterations: 200          # main profiling iterations (logged)
+  warmup_iterations: 100        # warmup (not logged)
+
+  # Defaults for bottleneck summary section
+  default_batch_size: 32
+  default_num_workers: 4
+
+  # NEW: per-worker JSONL flush cadence (every N batches)
+  flush_every: 20
+
+  # P0 bottleneck toggles
+  mcinfo:
+    enabled: true
+
+  mcc:
+    enabled: true
+
+  text:
+    enabled: true
+
+
+# ---------- for embedder creation ----------
+# Model configuration
+model:
+  # Embedder configurations
+  embedders:
+    text:
+      pretrained_model_name: "alabnii/jmedroberta-base-sentencepiece"
+      max_length: 512
+      padding: "longest"
+      truncation: true
+      add_phi_tokens: true
+      phi_patterns_path: "config/cleaning/phi_patterns.yaml"
+      output_dir: "outputs/embedders/text_embedder"
+      trainable: true
+    
+    categorical:
+      vocab_path: "config/embedders/cat_vocab.yaml"
+      embedding_dim: 768
+      trainable: true
+      padding_idx: 0
+      use_xavier_init: true
+      output_dir: "outputs/embedders/categorical_embedder"
+    
+    numerical:
+      d_embedding: 768
+      n_bands: 32
+      sigma: 1.0
+      bias: false
+      seed: 42
+      output_dir: "outputs/embedders/numerical_embedder"
+      trainable: true
+
+# ---------- Collation settings (kept consistent with SSL training) ----------
+training:
+  p_mlm: 0.15
+  p_mcm: 0.15
+  p_cvr: 0.20
+  p_mcc: 0.20
+  use_held_out_codes: false
+  held_out_codes_path: "config/splitting/held_out_codes.yaml"
+
+  # MCC config
+  mcc:
+    enabled: true
+    K: 5                               
+    noise:
+      gaussian_scales: [0.05, 0.20]
+      mix_probs: [0.5, 0.35, 0.15]
+      large_min_norm_dist: 0.3
+
+# ---------- Output ----------
+output:
+  results_dir: "data_profiling/profiling_results/"
+  save_raw_metrics: true
+  save_aggregated: true
+  save_plots: true
+  figure_size: [12, 8]
+  dpi: 100
+  format: "png"
+
+# ---------- Reproducibility & logging ----------
+seed: 42
+verbose: true
+log_every: 10    # log progress every N iterations

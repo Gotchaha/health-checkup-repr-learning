@@ -1,0 +1,25 @@
+# config/embedders/text_embedder.yaml
+
+# Model settings
+pretrained_model_name: "alabnii/jmedroberta-base-sentencepiece"  # Japanese medical BERT model
+
+# Tokenization parameters
+max_length: 512        # Maximum sequence length for tokenization
+padding: "longest"     # Padding strategy ("longest", "max_length", or "do_not_pad")
+truncation: true       # Whether to truncate sequences longer than max_length
+
+# PHI token settings
+add_phi_tokens: true                                   # Whether to add PHI replacement tokens
+phi_patterns_path: "config/cleaning/phi_patterns.yaml" # Path to PHI patterns definition
+
+# Additional special tokens (beyond PHI tokens)
+special_tokens: null
+
+# Training settings
+trainable: true        # Whether embedding weights should be trainable
+
+# Output settings
+output_dir: "outputs/embedders/text_embedder_v1"  # Where to save model & metadata
+
+# Hardware settings
+device: "cpu"  # Use "cpu" for CPU-only, "cuda:0" for first GPU, etc.

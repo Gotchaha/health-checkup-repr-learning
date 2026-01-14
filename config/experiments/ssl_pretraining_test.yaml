@@ -1,0 +1,84 @@
+# Testing configuration for SSL pretraining
+# Step-based quick test for technical validation
+
+extends: base.yaml
+
+# Override experiment metadata
+experiment_name: "ssl_pretraining_step_test"
+description: "Step-based quick test - technical validation only"
+
+# Training configuration adjustments for testing
+training:
+  # Step-based parameters for quick testing
+  max_steps: 1000
+  validation_freq: 200
+  full_validation_freq: 999999
+  val_subset_batches: 30
+  batch_size: 16
+  learning_rate: 5.0e-4
+  
+  # Keep other core parameters from base
+  embedder_lr: 1.0e-5
+  loss_weight_lr: 1.0e-3
+  
+  # Scheduler settings for test duration
+  scheduler:
+    type: "cosine"
+    warmup_steps: 200
+    step_on: "step"
+  
+  # Early stopping settings for testing
+  early_stopping:
+    enabled: true
+    monitor: "val_total_loss"
+    min_delta: 0.01
+    patience: 1200
+    mode: "min"
+  
+  # Checkpointing settings for testing
+  checkpoint:
+    monitor: "val_total_loss"
+    mode: "min"
+    save_best_only: false
+    save_freq: 400
+
+  raise_on_nan: false
+
+# Model configuration adjustments for faster testing
+model:
+  # Reduced transformer layers for faster training
+  n_cross_layers: 1
+  n_uni_layers: 2
+  n_ind_layers: 1
+  
+  # Smaller text compression for faster processing
+  text_compress_tokens: 25
+  
+  # Keep other dimensions the same to test full pipeline
+
+# Data configuration - keep modalities simple for testing
+data:
+  use_result: true
+  use_interview: false
+  num_workers: 8
+  pin_memory: true
+  prefetch_factor: 4
+
+  use_pretokenized_result: true
+  result_tokenized_path: "cache/pretokenized/result_jmedrobertabasesentencepiece_tok512_trunc_phi.parquet"
+  
+# Monitoring configuration for testing
+monitoring:
+  enabled: true
+  attention_save_freq: 100
+  visualization_freq: 500
+  grad_stats_freq: 50
+
+# Keep wandb disabled for testing
+use_wandb: false
+
+# Testing-specific notes
+notes: |
+  Step-based technical test: 2k steps, validation every 400 steps.
+  Purpose: verify forward/backward pass, loss computation, callbacks, and logging.
+  Expected duration: 3-5 minutes for complete technical validation.
