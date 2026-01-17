@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it using this metadata.
+title: Representation Learning of Health Checkup Data (CheckupSSL)
+type: software
+authors:
+  - family-names: Lu
+    given-names: Yiming
+note: Code for a Master’s thesis project at the University of Tokyo (thesis not publicly available).
